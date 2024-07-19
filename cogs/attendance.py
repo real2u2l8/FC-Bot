@@ -10,7 +10,7 @@ class Attendance(commands.Cog):
     @commands.command(name="출첵")
     async def start_attendance(self, ctx):
         message = await ctx.send(
-            "20시까지 선택하세요.\n"
+            "출석체크\n"
             "1. 참여: ✅\n"
             "2. 늦참: 🕒\n"
             "3. 불참: ❌\n"
@@ -61,9 +61,9 @@ class Attendance(commands.Cog):
             if member:
                 attendance_summary[status].append(member.display_name)
 
-        summary_message = "출석체크 결과:\n"
+        summary_message = "## 출석체크 결과\n"
         for status, users in attendance_summary.items():
-            summary_message += f"{status}:\n" + "\n".join(f" - {user}" for user in users) + "\n\n"
+            summary_message += f"### {status}:\n" + "\n".join(f" - {user}\n" for user in users) + "\n"
 
         await ctx.send(summary_message)
         # Reset attendance record for this channel

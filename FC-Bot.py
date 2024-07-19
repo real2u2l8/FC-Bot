@@ -21,7 +21,7 @@ intents.message_content = True  # This is needed to read message content
 bot = commands.Bot(command_prefix=config['prefix'], intents=intents)
 
 async def load_extensions():
-    initial_extensions = ['cogs.attendance']
+    initial_extensions = ['cogs.attendance', 'cogs.dice', 'cogs.fun']
     for extension in initial_extensions:
         try:
             await bot.load_extension(extension)  # 비동기로 호출

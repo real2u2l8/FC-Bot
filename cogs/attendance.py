@@ -1,5 +1,5 @@
 from discord.ext import commands
-import datetime
+import discord
 
 class Attendance(commands.Cog):
     def __init__(self, bot):
@@ -10,7 +10,7 @@ class Attendance(commands.Cog):
     @commands.command(name="출첵")
     async def start_attendance(self, ctx):
         message = await ctx.send(
-            "출석체크\n"
+            "### 출석체크\n"
             "1. 참여: ✅\n"
             "2. 늦참: 🕒\n"
             "3. 불참: ❌\n"
@@ -61,11 +61,12 @@ class Attendance(commands.Cog):
             if member:
                 attendance_summary[status].append(member.display_name)
 
-        summary_message = "## 출석체크 결과\n"
+        embed = discord.Embed(title="출석체크 결과", color=discord.Color.blue())
         for status, users in attendance_summary.items():
-            summary_message += f"### {status}:\n" + "\n".join(f" - {user}\n" for user in users) + "\n"
+            if users:
+                embed.add_field(name=status, value="\n".join(users), inline=False)
 
-        await ctx.send(summary_message)
+        await ctx.send(embed=embed)
         # Reset attendance record for this channel
         self.attendance_records[channel_id] = {}
         self.attendance_message_ids.pop(channel_id, None)

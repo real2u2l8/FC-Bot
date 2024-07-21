@@ -1,7 +1,1 @@
 discord.py
-
-root/conifg.json :
-{
-    "token": "YOUR_DISCORD_BOT_TOKEN",
-    "prefix": "!"
-}

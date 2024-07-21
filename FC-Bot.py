@@ -21,10 +21,10 @@ intents.message_content = True  # This is needed to read message content
 bot = commands.Bot(command_prefix=config['prefix'], intents=intents)
 
 async def load_extensions():
-    initial_extensions = ['cogs.attendance', 'cogs.dice', 'cogs.fun', 'cogs.welcome', 'cogs.repeat_metion']
+    initial_extensions = ['cogs.adminCommands', 'cogs.attendance', 'cogs.common', 'cogs.service']
     for extension in initial_extensions:
         try:
-            await bot.load_extension(extension)  # 비동기로 호출
+            await bot.load_extension(extension)  # Call by Asyn
             logging.info(f'Successfully loaded extension {extension}')
         except Exception as e:
             logging.error(f'Failed to load extension {extension}.', exc_info=True)
@@ -32,7 +32,7 @@ async def load_extensions():
 @bot.event
 async def on_ready():
     logging.info(f'Logged in as {bot.user.name} - {bot.user.id}')
-    await load_extensions()  # 비동기로 호출
+    await load_extensions()  # Call by Asyn
 
 # Run bot
 async def main():

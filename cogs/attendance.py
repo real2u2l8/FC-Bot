@@ -4,23 +4,28 @@ import discord
 class Attendance(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.attendance_message_ids = {}  # 채널별 출석체크 메시지 ID 저장
-        self.attendance_records = {}  # 채널별 출석체크 기록 저장
+        self.attendance_message_ids = {}  # Store attendance message IDs per channel
+        self.attendance_records = {}  # Store attendance records per channel
 
     @commands.command(name="출첵")
-    async def start_attendance(self, ctx):
-        message = await ctx.send(
-            "### 출석체크\n"
-            "1. 참여: ✅\n"
-            "2. 늦참: 🕒\n"
-            "3. 불참: ❌\n"
-            "4. 미정: ❓"
-        )
-        self.attendance_message_ids[ctx.channel.id] = message.id
-        self.attendance_records[ctx.channel.id] = {}  # 초기화
-        reactions = ["✅", "🕒", "❌", "❓"]
-        for reaction in reactions:
-            await message.add_reaction(reaction)
+    async def start_attendance(self, ctx, date: str = None):
+        if date and len(date) == 4 and date.isdigit():
+            month = date[:2]
+            day = date[2:]
+            message = await ctx.send(
+                f"### {month}월 {day}일 출석체크\n"
+                "1. 참여: ✅\n"
+                "2. 늦참: 🕒\n"
+                "3. 불참: ❌\n"
+                "4. 미정: ❓"
+            )
+            self.attendance_message_ids[ctx.channel.id] = message.id
+            self.attendance_records[ctx.channel.id] = {}  # Initialize
+            reactions = ["✅", "🕒", "❌", "❓"]
+            for reaction in reactions:
+                await message.add_reaction(reaction)
+        else:
+            await ctx.send("출석체크 명령어 사용법: $출첵 [월일 (4자리 숫자)]\n예시: $출첵 0721")
 
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):

@@ -33,8 +33,10 @@ pip install -r requirements.txt
 
 3. **봇 설정:**
 
-- 루트 디렉토리에 .env 파일 생성.
 - 디스코드 봇 토큰 및 필요한 설정 추가.
+```bash
+mv config.json.bak config.json
+```
 
 4. **봇 실행:**
 

@@ -6,6 +6,7 @@ class Admin(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.log_channel_id = 1264772087156047944  # 로그를 기록할 채널의 ID
+        self.excluded_roles = ["BOT"]  # 로그에서 제외할 역할들
     # cogs 업데이트 후 reload
     @commands.command(name='리로드')
     @commands.is_owner()
@@ -23,13 +24,14 @@ class Admin(commands.Cog):
     # 메시지 삭제 로그
     @commands.Cog.listener()
     async def on_message_delete(self, message):
-        log_channel = self.bot.get_channel(self.log_channel_id)
-        if log_channel:
-            embed = discord.Embed(title="사용자 메시지 삭제 로그", color=discord.Color.red())
-            embed.add_field(name="사용자", value=message.author.mention, inline=False)
-            embed.add_field(name="채널", value=message.channel.mention, inline=False)
-            embed.add_field(name="내용", value=message.content, inline=False)
-            await log_channel.send(embed=embed)
+        if not any(role.name in self.excluded_roles for role in message.author.roles):
+            log_channel = self.bot.get_channel(self.log_channel_id)
+            if log_channel:
+                embed = discord.Embed(title="사용자 메시지 삭제 로그", color=discord.Color.red())
+                embed.add_field(name="사용자", value=message.author.mention, inline=False)
+                embed.add_field(name="채널", value=message.channel.mention, inline=False)
+                embed.add_field(name="내용", value=message.content, inline=False)
+                await log_channel.send(embed=embed)
     # 사용자 가입 로그
     @commands.Cog.listener()
     async def on_member_join(self, member):

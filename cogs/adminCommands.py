@@ -5,7 +5,9 @@ import logging
 class Admin(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.log_channel_id = 1264772087156047944  # 로그를 기록할 채널의 ID
+        self.massage_log_channel_id = 1264772087156047944  # 메시지 로그를 기록할 채널의 ID
+        self.channeling_log_channel_id = 1264981112695033887  # 채널관련 로그를 기록할 채널의 ID
+        self.member_log_channel_id = 1264981524764299284  # 멤버 로그를 기록할 채널의 ID
         self.excluded_roles = ["BOT"]  # 로그에서 제외할 역할들
     # cogs 업데이트 후 reload
     @commands.command(name='리로드')
@@ -25,7 +27,7 @@ class Admin(commands.Cog):
     @commands.Cog.listener()
     async def on_message_delete(self, message):
         if not any(role.name in self.excluded_roles for role in message.author.roles):
-            log_channel = self.bot.get_channel(self.log_channel_id)
+            log_channel = self.bot.get_channel(self.massage_log_channel_id)
             if log_channel:
                 embed = discord.Embed(title="사용자 메시지 삭제 로그", color=discord.Color.red())
                 embed.add_field(name="사용자", value=message.author.mention, inline=False)
@@ -35,7 +37,7 @@ class Admin(commands.Cog):
     # 사용자 가입 로그
     @commands.Cog.listener()
     async def on_member_join(self, member):
-        log_channel = self.bot.get_channel(self.log_channel_id)
+        log_channel = self.bot.get_channel(self.member_log_channel_id)
         if log_channel:
             embed = discord.Embed(title="새로운 사용자 가입", color=discord.Color.green())
             embed.add_field(name="사용자", value=member.mention, inline=False)
@@ -44,7 +46,7 @@ class Admin(commands.Cog):
     # 사용자 퇴장 로그
     @commands.Cog.listener()
     async def on_member_remove(self, member):
-        log_channel = self.bot.get_channel(self.log_channel_id)
+        log_channel = self.bot.get_channel(self.member_log_channel_id)
         if log_channel:
             embed = discord.Embed(title="사용자 퇴장", color=discord.Color.orange())
             embed.add_field(name="사용자", value=member.mention, inline=False)
@@ -52,7 +54,7 @@ class Admin(commands.Cog):
     # 채널생성 로그
     @commands.Cog.listener()
     async def on_guild_channel_create(self, channel):
-        log_channel = self.bot.get_channel(self.log_channel_id)
+        log_channel = self.bot.get_channel(self.channeling_log_channel_id)
         if log_channel:
             embed = discord.Embed(title="채널 생성", color=discord.Color.blue())
             embed.add_field(name="채널", value=channel.mention, inline=False)
@@ -60,7 +62,7 @@ class Admin(commands.Cog):
     # 채널삭제 로그
     @commands.Cog.listener()
     async def on_guild_channel_delete(self, channel):
-        log_channel = self.bot.get_channel(self.log_channel_id)
+        log_channel = self.bot.get_channel(self.channeling_log_channel_id)
         if log_channel:
             embed = discord.Embed(title="채널 삭제", color=discord.Color.dark_blue())
             embed.add_field(name="채널", value=channel.name, inline=False)

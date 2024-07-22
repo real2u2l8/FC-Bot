@@ -13,34 +13,12 @@ class Draft(commands.Cog):
         self.user_positions = {}  # 채널별 사용자 포지션 저장
         self.registration_channel_id = 1264757976997040240  # 대기 참가/삭제 명령어를 사용할 수 있는 채널 ID
         self.guide_channel_id = 1264757976997040240  # 드래프트 가이드를 올릴 채널 ID
-        self.send_guide_message.start() # 드래프트 가이드 시작 트리거
         self.waiting_pool = []  # 대기 참가자를 저장하는 리스트
         self.allowed_roles = ["매니저", ""]  # 명령어를 사용할 수 있는 역할 이름들
-    
+
     def cog_unload(self):
-        self.send_guide_message.cancel()
-        
-    @tasks.loop(minutes=30)  # 몇 분마다 자동 메시지 전송?
-    async def send_guide_message(self):
-        guide_channel = self.bot.get_channel(self.guide_channel_id)
-        if guide_channel:
-            embed = discord.Embed(
-                title="대기 채널 준수 가이드",
-                description=(
-                    "- **$대기참가** 입력하여 대기 목록에 추가됩니다.\n"
-                    "- **$대기삭제** 입력하여 대기 목록에서 제거됩니다.\n"
-                    "- 드래프트 참여 혹은 게임 참여 시 대기 삭제 부탁드립니다.\n"
-                ),
-                color=discord.Color.blue()
-            )
-            await guide_channel.send(embed=embed)
-        else:
-            print(f"Cannot find channel with ID {self.guide_channel_id}")
-            
-    @send_guide_message.before_loop
-    async def before_send_guide_message(self):
-        await self.bot.wait_until_ready()
-    
+        pass
+
     @commands.command(name='대기참가')
     async def join_waiting_list(self, ctx):
         if ctx.channel.id != self.registration_channel_id:
@@ -68,7 +46,7 @@ class Draft(commands.Cog):
             await ctx.send(f"{ctx.author.mention}님은 대기 목록에 없습니다.")
 
         await self.show_waiting_list(ctx)
-    
+
     @commands.command(name='대기삭제_번호')
     async def leave_waiting_list_by_number(self, ctx, index: int):
         if ctx.channel.id != self.registration_channel_id:
@@ -100,7 +78,7 @@ class Draft(commands.Cog):
         self.waiting_pool.clear()
         await ctx.send("대기 목록이 초기화되었습니다.")
         await self.show_waiting_list(ctx)
-        
+
     # 대기현황 함수
     async def show_waiting_list(self, ctx):
         if not self.waiting_pool:
@@ -119,29 +97,35 @@ class Draft(commands.Cog):
         return False
 
     @commands.command(name="드래프트")
-    async def start_draft(self, ctx, team_count: int = 1):
-        if team_count not in [1, 2]:
-            await ctx.send("팀 수는 1 또는 2만 가능합니다.")
+    async def start_draft(self, ctx, team_count: str):
+        if team_count not in ["1", "2"]:
+            await ctx.send("팀 수는 1 또는 2만 가능합니다. 올바른 명령어 형식은 `$드래프트 1` 또는 `$드래프트 2`입니다.")
             return
 
-        self.init_draft(ctx.channel.id, team_count)
-        
+        self.init_draft(ctx.channel.id, int(team_count))
+
+        # 서버 이모지 가져오기
+        st_emoji = discord.utils.get(ctx.guild.emojis, name='ESPN_ST')
+        lw_emoji = discord.utils.get(ctx.guild.emojis, name='ESPN_LW')
+        rw_emoji = discord.utils.get(ctx.guild.emojis, name='ESPN_RW')
+        lcm_emoji = discord.utils.get(ctx.guild.emojis, name='ESPN_CM')
+        rcm_emoji = discord.utils.get(ctx.guild.emojis, name='ESPN_CM')
+        cdm_emoji = discord.utils.get(ctx.guild.emojis, name='ESPN_DM')
+        lb_emoji = discord.utils.get(ctx.guild.emojis, name='ESPN_LB')
+        lcb_emoji = discord.utils.get(ctx.guild.emojis, name='ESPN_CB')
+        rcb_emoji = discord.utils.get(ctx.guild.emojis, name='ESPN_CB')
+        rb_emoji = discord.utils.get(ctx.guild.emojis, name='ESPN_RB')
+        gk_emoji = discord.utils.get(ctx.guild.emojis, name='ESPN_GK')
+
         message = await ctx.send(
             f"## {team_count}개 팀 드래프트\n"
             "### 중복으로 눌러도 처음 누른 포지션으로 진행 되니 유의 바랍니다.\n"
-            "ST: 🎯\n"
-            "LW: 🏃‍♂️\n"
-            "RW: 🏃‍♀️\n"
-            "LCM: 👟\n"
-            "RCM: 👟\n"
-            "CDM: ⚔️\n"
-            "LB: 🦵\n"
-            "RB: ⚽\n"
-            "CB: 🛡️\n"
-            "GK: 🧤"
+            "### 4-3-3 포메이션\n"
         )
         self.draft_message_ids[ctx.channel.id] = message.id
-        reactions = ["🎯", "🏃‍♂️", "🏃‍♀️", "👟", "👟", "⚔️", "🦵", "⚽", "🛡️", "🧤"]
+        reactions = [
+            st_emoji, lw_emoji, rw_emoji, lcm_emoji, rcm_emoji, cdm_emoji, lb_emoji, lcb_emoji, rcb_emoji, rb_emoji, gk_emoji
+        ]
 
         # 포지션 선택 이모지 추가 및 10초 카운트다운 표시
         countdown_message = await ctx.send(self.get_countdown_message(10, ctx))
@@ -154,7 +138,7 @@ class Draft(commands.Cog):
         await asyncio.sleep(1)
         await countdown_message.delete()
 
-        await self.complete_draft(ctx, team_count)
+        await self.complete_draft(ctx, int(team_count))
 
     def init_draft(self, channel_id, team_count):
         self.positions[channel_id] = {
@@ -166,7 +150,8 @@ class Draft(commands.Cog):
             "CDM": [],
             "LB": [],
             "RB": [],
-            "CB": [],
+            "LCB": [],
+            "RCB": [],
             "GK": []
         }
         self.teams[channel_id] = {
@@ -179,8 +164,8 @@ class Draft(commands.Cog):
                 "CDM": None,
                 "LB": None,
                 "RB": None,
-                "CB1": None,
-                "CB2": None,
+                "LCB": None,
+                "RCB": None,
                 "GK": None
             },
             "Team 2": {
@@ -192,8 +177,8 @@ class Draft(commands.Cog):
                 "CDM": None,
                 "LB": None,
                 "RB": None,
-                "CB1": None,
-                "CB2": None,
+                "LCB": None,
+                "RCB": None,
                 "GK": None
             } if team_count == 2 else {}
         }
@@ -228,18 +213,18 @@ class Draft(commands.Cog):
             return
 
         position_map = {
-            "🎯": "ST",
-            "🏃‍♂️": "LW",
-            "🏃‍♀️": "RW",
-            "👟": "LCM" if len(self.positions[channel_id]["LCM"]) <= len(self.positions[channel_id]["RCM"]) else "RCM",
-            "⚔️": "CDM",
-            "🦵": "LB",
-            "⚽": "RB",
-            "🛡️": "CB",
-            "🧤": "GK"
+            "ESPN_ST": "ST",
+            "ESPN_LW": "LW",
+            "ESPN_RW": "RW",
+            "ESPN_CM": "LCM" if len(self.positions[channel_id]["LCM"]) <= len(self.positions[channel_id]["RCM"]) else "RCM",
+            "ESPN_DM": "CDM",
+            "ESPN_LB": "LB",
+            "ESPN_RB": "RB",
+            "ESPN_CB": "LCB" if len(self.positions[channel_id]["LCB"]) <= len(self.positions[channel_id]["RCB"]) else "RCB",
+            "ESPN_GK": "GK"
         }
 
-        position = position_map.get(reaction.emoji)
+        position = position_map.get(reaction.emoji.name)
         if position:
             self.positions[channel_id][position].append(user)
             self.user_positions[channel_id][user.id] = position  # 사용자 포지션 저장
@@ -249,11 +234,11 @@ class Draft(commands.Cog):
         unselected_users = []
 
         for position, users in self.positions[channel_id].items():
-            if position == "CB":
-                chosen_users = random.sample(users, min(4 if team_count == 2 else 2, len(users)))
+            if position in ["LCB", "RCB"]:
+                chosen_users = random.sample(users, min(2 if team_count == 2 else 1, len(users)))
                 for i, chosen_user in enumerate(chosen_users):
-                    team = "Team 1" if i < 2 else "Team 2"
-                    self.teams[channel_id][team][f"CB{i%2+1}"] = chosen_user
+                    team = "Team 1" if i < 1 else "Team 2"
+                    self.teams[channel_id][team][position] = chosen_user
                 unselected_users.extend([user for user in users if user not in chosen_users])
             else:
                 if users:
@@ -267,7 +252,7 @@ class Draft(commands.Cog):
         embed_team1 = discord.Embed(title="A팀 드래프트 결과", color=discord.Color.blue())
         embed_team1.add_field(name="포워드", value=self.get_team_field(channel_id, "Team 1", "ST", "LW", "RW"), inline=False)
         embed_team1.add_field(name="미드필더", value=self.get_team_field(channel_id, "Team 1", "LCM", "RCM", "CDM"), inline=False)
-        embed_team1.add_field(name="수비수", value=self.get_team_field(channel_id, "Team 1", "LB", "CB1", "CB2", "RB"), inline=False)
+        embed_team1.add_field(name="수비수", value=self.get_team_field(channel_id, "Team 1", "LB", "LCB", "RCB", "RB"), inline=False)
         embed_team1.add_field(name="골키퍼", value=self.get_user_mention(channel_id, "Team 1", "GK"), inline=False)
         await ctx.send(embed=embed_team1)
 
@@ -276,7 +261,7 @@ class Draft(commands.Cog):
             embed_team2 = discord.Embed(title="B팀 드래프트 결과", color=discord.Color.red())
             embed_team2.add_field(name="포워드", value=self.get_team_field(channel_id, "Team 2", "ST", "LW", "RW"), inline=False)
             embed_team2.add_field(name="미드필더", value=self.get_team_field(channel_id, "Team 2", "LCM", "RCM", "CDM"), inline=False)
-            embed_team2.add_field(name="수비수", value=self.get_team_field(channel_id, "Team 2", "LB", "CB1", "CB2", "RB"), inline=False)
+            embed_team2.add_field(name="수비수", value=self.get_team_field(channel_id, "Team 2", "LB", "LCB", "RCB", "RB"), inline=False)
             embed_team2.add_field(name="골키퍼", value=self.get_user_mention(channel_id, "Team 2", "GK"), inline=False)
             await ctx.send(embed=embed_team2)
 

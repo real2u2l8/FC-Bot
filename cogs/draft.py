@@ -15,12 +15,12 @@ class Draft(commands.Cog):
         self.guide_channel_id = 1264757976997040240  # 드래프트 가이드를 올릴 채널 ID
         self.send_guide_message.start() # 드래프트 가이드 시작 트리거
         self.waiting_pool = []  # 대기 참가자를 저장하는 리스트
-        self.allowed_roles = ["매니저",""]  # 명령어를 사용할 수 있는 역할 이름들
+        self.allowed_roles = ["매니저", ""]  # 명령어를 사용할 수 있는 역할 이름들
     
     def cog_unload(self):
         self.send_guide_message.cancel()
         
-    @tasks.loop(minutes=30) # 몇분마다 자동 메시지 전송?
+    @tasks.loop(minutes=30)  # 몇 분마다 자동 메시지 전송?
     async def send_guide_message(self):
         guide_channel = self.bot.get_channel(self.guide_channel_id)
         if guide_channel:
@@ -109,6 +109,7 @@ class Draft(commands.Cog):
             waiting_list = "\n".join(f"{idx + 1}. {member.mention}" for idx, member in enumerate(self.waiting_pool))
             embed = discord.Embed(title="대기 목록 현황", description=waiting_list, color=discord.Color.blue())
             await ctx.send(embed=embed)
+
     # 특정 역할 확인 함수
     async def has_allowed_role(self, ctx):
         member_roles = [role.name for role in ctx.author.roles]
@@ -264,8 +265,8 @@ class Draft(commands.Cog):
 
         # Team 1 임베드 생성
         embed_team1 = discord.Embed(title="A팀 드래프트 결과", color=discord.Color.blue())
-        embed_team1.add_field(name="포워드", value=self.get_team_field(channel_id, "Team 1", "LW", "ST", "RW"), inline=False)
-        embed_team1.add_field(name="미드필더", value=self.get_team_field(channel_id, "Team 1", "LCM", "CDM", "RCM"), inline=False)
+        embed_team1.add_field(name="포워드", value=self.get_team_field(channel_id, "Team 1", "ST", "LW", "RW"), inline=False)
+        embed_team1.add_field(name="미드필더", value=self.get_team_field(channel_id, "Team 1", "LCM", "RCM", "CDM"), inline=False)
         embed_team1.add_field(name="수비수", value=self.get_team_field(channel_id, "Team 1", "LB", "CB1", "CB2", "RB"), inline=False)
         embed_team1.add_field(name="골키퍼", value=self.get_user_mention(channel_id, "Team 1", "GK"), inline=False)
         await ctx.send(embed=embed_team1)
@@ -273,8 +274,8 @@ class Draft(commands.Cog):
         # Team 2 임베드 생성
         if team_count == 2:
             embed_team2 = discord.Embed(title="B팀 드래프트 결과", color=discord.Color.red())
-            embed_team2.add_field(name="포워드", value=self.get_team_field(channel_id, "Team 2", "LW", "ST", "RW"), inline=False)
-            embed_team2.add_field(name="미드필더", value=self.get_team_field(channel_id, "Team 2", "LCM", "CDM", "RCM"), inline=False)
+            embed_team2.add_field(name="포워드", value=self.get_team_field(channel_id, "Team 2", "ST", "LW", "RW"), inline=False)
+            embed_team2.add_field(name="미드필더", value=self.get_team_field(channel_id, "Team 2", "LCM", "RCM", "CDM"), inline=False)
             embed_team2.add_field(name="수비수", value=self.get_team_field(channel_id, "Team 2", "LB", "CB1", "CB2", "RB"), inline=False)
             embed_team2.add_field(name="골키퍼", value=self.get_user_mention(channel_id, "Team 2", "GK"), inline=False)
             await ctx.send(embed=embed_team2)
@@ -292,7 +293,7 @@ class Draft(commands.Cog):
         self.reset_draft(channel_id)
 
     def get_team_field(self, channel_id, team, *positions):
-        return "       ".join([self.get_user_mention(channel_id, team, pos) for pos in positions])
+        return "\n".join([f"{pos} - {self.get_user_mention(channel_id, team, pos)}" for pos in positions])
 
     def get_user_mention(self, channel_id, team, position):
         user = self.teams[channel_id][team].get(position)

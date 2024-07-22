@@ -6,7 +6,8 @@ class Attendance(commands.Cog):
         self.bot = bot
         self.attendance_message_ids = {}  # Store attendance message IDs per channel
         self.attendance_records = {}  # Store attendance records per channel
-
+        
+    # 출석체크 명령어
     @commands.command(name="출첵")
     async def start_attendance(self, ctx, date: str = None):
         if date and len(date) == 4 and date.isdigit():
@@ -17,7 +18,8 @@ class Attendance(commands.Cog):
                 "1. 참여: ✅\n"
                 "2. 늦참: 🕒\n"
                 "3. 불참: ❌\n"
-                "4. 미정: ❓"
+                "4. 미정: ❓\n"
+                "원하시는 시간대에 **$출첵마감**을 사용하세요!\n"
             )
             self.attendance_message_ids[ctx.channel.id] = message.id
             self.attendance_records[ctx.channel.id] = {}  # Initialize
@@ -26,7 +28,6 @@ class Attendance(commands.Cog):
                 await message.add_reaction(reaction)
         else:
             await ctx.send("출석체크 명령어 사용법: $출첵 [월일 (4자리 숫자)]\n예시: $출첵 0721")
-
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):
         if user.bot:
@@ -46,7 +47,8 @@ class Attendance(commands.Cog):
             
             if status:
                 self.attendance_records[channel_id][user.id] = status
-
+                
+    # 출첵마감 명령어
     @commands.command(name="출첵마감")
     async def end_attendance(self, ctx):
         channel_id = ctx.channel.id

@@ -41,7 +41,7 @@ class Service(commands.Cog):
             if user_guide_channel:
                 # 유저 가이드 메시지 작성
                 guide_message = (
-                    f"{member.mention}, #선수-등록 에서 `$선수등록` 을 사용하여, 역할을 부여 받으세요. "
+                    f"{member.mention}, #선수-등록 에서 `$선수등록` 을 사용하여, 역할을 부여 받으세요.\n#공방-출석체크 에서 출석체크 부탁드립니다!"
                 )
 
                 # 유저 가이드 채널에 메시지 보내기

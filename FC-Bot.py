@@ -4,12 +4,16 @@ import json
 import logging
 import asyncio
 
-# Set up logging
-logging.basicConfig(level=logging.INFO)
-
 # Load config
 with open('config.json') as f:
     config = json.load(f)
+
+# Set up logging
+log_file = config.get('log_file', 'bot.log')  # Use the log_file path from config or default to 'bot.log'
+logging.basicConfig(level=logging.INFO, format='%(asctime)s:%(levelname)s:%(name)s: %(message)s', handlers=[
+    logging.FileHandler(log_file),
+    logging.StreamHandler()
+])
 
 # Initialize bot
 intents = discord.Intents.default()
@@ -21,8 +25,7 @@ intents.message_content = True  # This is needed to read message content
 bot = commands.Bot(command_prefix=config['prefix'], intents=intents)
 
 async def load_extensions():
-    initial_extensions = ['cogs.adminCommands', 'cogs.attendance', 'cogs.common', 'cogs.service', 'cogs.draft', 'cogs.register', 'cogs.autoMessage']
-    # initial_extensions = ['cogs.adminCommands', 'cogs.attendance', 'cogs.common', 'cogs.service', 'cogs.draft','cogs.register']
+    initial_extensions = ['cogs.adminCommands', 'cogs.attendance', 'cogs.common', 'cogs.service', 'cogs.draft', 'cogs.register']
     for extension in initial_extensions:
         try:
             await bot.load_extension(extension)  # Call by Asyn

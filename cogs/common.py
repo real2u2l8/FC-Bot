@@ -17,11 +17,10 @@ class Common(commands.Cog):
             "**$출첵 [월일 (4자리 숫자)]**\n"
             "예시: `$출첵 0721` - 7월 21일 출석체크를 시작합니다.\n"
             "형식에 맞지 않으면 도움말이 표시됩니다.\n\n"
+            "## 드래프트 관련:\n"
+            "**$드래프트도움말**를 참조하세요.\n\n"
             "**$출첵마감**\n"
             "현재 진행 중인 출석체크를 마감하고 결과를 표시합니다.\n\n"
-            "## 드래프트 관련:\n"
-            "**$드래프트 [숫자] (1,2만 가능합니다.)**\n"
-            "최대 2팀까지의 드래프트를 진행합니다.\n\n"
             "## 기타 기능:\n"
             "**$주사위 `숫자`**\n"
             "입력한 숫자 내로 랜덤값을 표시합니다.\n\n"
@@ -34,6 +33,15 @@ class Common(commands.Cog):
             "지정된 유저를 5번 반복 멘션합니다.(매니저 전용)\n\n"
         )
         await ctx.send(help_message)
+        
+    @commands.command(name='드래프트도움말')
+    async def show_draft_help(self, ctx):
+        draft_help_message = (
+            "## 드래프트, 대기 명령어 도움말:\n"
+            "**$드래프트 [숫자] (1,2만 가능합니다.)**\n"
+            "최대 2팀까지의 드래프트를 진행합니다.\n\n"
+        )
+        await ctx.send(draft_help_message)
 
     # 반복멘션 명령어
     @commands.command(name='반복멘션')

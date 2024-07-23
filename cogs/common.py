@@ -88,8 +88,10 @@ class Common(commands.Cog):
         users = [user async for user in message.reactions[0].users() if not user.bot]
 
         if users:
-            winner = random.choice(users)
-            await ctx.send(f"**{purpose}** - {winner.mention} 🎉")
+            random.shuffle(users)
+            winners = users[:3]  # 상위 3명을 뽑기
+            results = [f"{idx+1}등: {winner.mention}" for idx, winner in enumerate(winners)]
+            await ctx.send(f"**{purpose}** - 결과:\n" + "\n".join(results))
         else:
             await ctx.send("아무도 체크하지 않았습니다.")
 

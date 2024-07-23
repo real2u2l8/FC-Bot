@@ -34,7 +34,8 @@ intents.message_content = True  # This is needed to read message content
 bot = commands.Bot(command_prefix=config['prefix'], intents=intents)
 
 async def load_extensions():
-    initial_extensions = ['cogs.adminCommands', 'cogs.attendance', 'cogs.common', 'cogs.service', 'cogs.draft', 'cogs.register']
+    # initial_extensions = ['cogs.adminCommands', 'cogs.attendance', 'cogs.common', 'cogs.service', 'cogs.draft', 'cogs.register']
+    initial_extensions = ['cogs.adminCommands', 'cogs.attendance', 'cogs.common', 'cogs.service', 'cogs.draft', 'cogs.register', 'cogs.autoMessage']
     for extension in initial_extensions:
         try:
             await bot.load_extension(extension)  # Call by Asyn

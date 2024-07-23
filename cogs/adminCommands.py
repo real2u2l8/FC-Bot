@@ -36,7 +36,6 @@ class Admin(commands.Cog):
                         embed.add_field(name="사용자", value=message.author.mention, inline=False)
                         embed.add_field(name="채널", value=message.channel.mention, inline=False)
                         embed.add_field(name="내용", value=message.content, inline=False)
-                        embed.add_field(name="삭제한 사람", value=entry.user.mention, inline=False)
                         await log_channel.send(embed=embed)
                         break
             else:

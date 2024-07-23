@@ -30,7 +30,7 @@ class Admin(commands.Cog):
             log_channel = self.bot.get_channel(self.message_log_channel_id)
             if log_channel:
                 async for entry in message.guild.audit_logs(action=discord.AuditLogAction.message_delete, limit=1):
-                    if entry.target.id == message.author.id and entry.extra.channel.id == message.channel.id:
+                    if entry.target.id == message.author and entry.extra.channel == message.channel:
                         embed = discord.Embed(title="사용자 메시지 삭제 로그", color=discord.Color.red())
                         embed.add_field(name="사용자", value=message.author.mention, inline=False)
                         embed.add_field(name="채널", value=message.channel.mention, inline=False)
@@ -45,16 +45,12 @@ class Admin(commands.Cog):
         if not any(role.name in self.excluded_roles for role in before.author.roles):
             log_channel = self.bot.get_channel(self.message_log_channel_id)
             if log_channel:
-                async for entry in before.guild.audit_logs(action=discord.AuditLogAction.message_edit, limit=1):
-                    if entry.target.id == before.author.id and entry.extra.channel.id == before.channel.id:
-                        embed = discord.Embed(title="사용자 메시지 수정 로그", color=discord.Color.orange())
-                        embed.add_field(name="사용자", value=before.author.mention, inline=False)
-                        embed.add_field(name="채널", value=before.channel.mention, inline=False)
-                        embed.add_field(name="수정 전 내용", value=before.content, inline=False)
-                        embed.add_field(name="수정 후 내용", value=after.content, inline=False)
-                        embed.add_field(name="수정한 사람", value=entry.user.mention, inline=False)
-                        await log_channel.send(embed=embed)
-                        break
+                embed = discord.Embed(title="사용자 메시지 수정 로그", color=discord.Color.orange())
+                embed.add_field(name="사용자", value=before.author.mention, inline=False)
+                embed.add_field(name="채널", value=before.channel.mention, inline=False)
+                embed.add_field(name="수정 전 내용", value=before.content, inline=False)
+                embed.add_field(name="수정 후 내용", value=after.content, inline=False)
+                await log_channel.send(embed=embed)
 
     # 사용자 가입 로그
     @commands.Cog.listener()
@@ -72,7 +68,7 @@ class Admin(commands.Cog):
         log_channel = self.bot.get_channel(self.member_log_channel_id)
         if log_channel:
             async for entry in member.guild.audit_logs(action=discord.AuditLogAction.kick, limit=1):
-                if entry.target.id == member.id:
+                if entry.target.id == member:
                     embed = discord.Embed(title="사용자 추방", color=discord.Color.red())
                     embed.add_field(name="사용자", value=member.mention, inline=False)
                     embed.add_field(name="실행자", value=entry.user.mention, inline=False)
@@ -89,7 +85,7 @@ class Admin(commands.Cog):
         log_channel = self.bot.get_channel(self.channeling_log_channel_id)
         if log_channel:
             async for entry in channel.guild.audit_logs(action=discord.AuditLogAction.channel_create, limit=1):
-                if entry.target.id == channel.id:
+                if entry.target.id == channel:
                     embed = discord.Embed(title="채널 생성", color=discord.Color.blue())
                     embed.add_field(name="채널", value=channel.mention, inline=False)
                     embed.add_field(name="생성자", value=entry.user.mention, inline=False)
@@ -102,7 +98,7 @@ class Admin(commands.Cog):
         log_channel = self.bot.get_channel(self.channeling_log_channel_id)
         if log_channel:
             async for entry in channel.guild.audit_logs(action=discord.AuditLogAction.channel_delete, limit=1):
-                if entry.target.id == channel.id:
+                if entry.target.id == channel:
                     embed = discord.Embed(title="채널 삭제", color=discord.Color.dark_blue())
                     embed.add_field(name="채널", value=channel.name, inline=False)
                     embed.add_field(name="삭제자", value=entry.user.mention, inline=False)

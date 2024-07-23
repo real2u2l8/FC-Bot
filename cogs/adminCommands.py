@@ -27,34 +27,39 @@ class Admin(commands.Cog):
     @commands.Cog.listener()
     async def on_message_delete(self, message):
         print(f"Message deleted: {message.content} by {message.author}")
-        log_channel = self.bot.get_channel(self.message_log_channel_id)
-        if log_channel:
-            async for entry in message.guild.audit_logs(action=discord.AuditLogAction.message_delete, limit=5):
-                if entry.target.id == message.author.id and entry.extra.channel.id == message.channel.id:
-                    embed = discord.Embed(title="사용자 메시지 삭제 로그", color=discord.Color.red())
-                    embed.add_field(name="사용자", value=message.author.mention, inline=False)
-                    embed.add_field(name="채널", value=message.channel.mention, inline=False)
-                    embed.add_field(name="내용", value=message.content, inline=False)
-                    embed.add_field(name="삭제한 사람", value=entry.user.mention, inline=False)
-                    await log_channel.send(embed=embed)
-                    break
-        else:
-            print("Logging channel not found for message deletion.")
+        if not any(role.name in self.excluded_roles for role in message.author.roles):
+            log_channel = self.bot.get_channel(self.message_log_channel_id)
+            if log_channel:
+                embed = discord.Embed(title="사용자 메시지 삭제 로그", color=discord.Color.red())
+                embed.add_field(name="사용자", value=message.author.mention, inline=False)
+                embed.add_field(name="채널", value=message.channel.mention, inline=False)
+                embed.add_field(name="내용", value=message.content, inline=False)
+
+                # 감사 로그에서 삭제한 사람 찾기
+                async for entry in message.guild.audit_logs(action=discord.AuditLogAction.message_delete, limit=5):
+                    if entry.target.id == message.author.id and entry.extra.channel.id == message.channel.id:
+                        embed.add_field(name="삭제한 사람", value=entry.user.mention, inline=False)
+                        break
+
+                await log_channel.send(embed=embed)
+            else:
+                print("Logging channel not found for message deletion.")
 
     # 메시지 수정 로그
     @commands.Cog.listener()
     async def on_message_edit(self, before, after):
         print(f"Message edited: {before.content} -> {after.content} by {before.author}")
-        log_channel = self.bot.get_channel(self.message_log_channel_id)
-        if log_channel:
-            embed = discord.Embed(title="사용자 메시지 수정 로그", color=discord.Color.orange())
-            embed.add_field(name="사용자", value=before.author.mention, inline=False)
-            embed.add_field(name="채널", value=before.channel.mention, inline=False)
-            embed.add_field(name="수정 전 내용", value=before.content, inline=False)
-            embed.add_field(name="수정 후 내용", value=after.content, inline=False)
-            await log_channel.send(embed=embed)
-        else:
-            print("Logging channel not found for message edit.")
+        if not any(role.name in self.excluded_roles for role in before.author.roles):
+            log_channel = self.bot.get_channel(self.message_log_channel_id)
+            if log_channel:
+                embed = discord.Embed(title="사용자 메시지 수정 로그", color=discord.Color.orange())
+                embed.add_field(name="사용자", value=before.author.mention, inline=False)
+                embed.add_field(name="채널", value=before.channel.mention, inline=False)
+                embed.add_field(name="수정 전 내용", value=before.content, inline=False)
+                embed.add_field(name="수정 후 내용", value=after.content, inline=False)
+                await log_channel.send(embed=embed)
+            else:
+                print("Logging channel not found for message edit.")
 
     # 사용자 가입 로그
     @commands.Cog.listener()

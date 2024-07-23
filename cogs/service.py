@@ -41,7 +41,7 @@ class Service(commands.Cog):
             if user_guide_channel:
                 # 유저 가이드 메시지 작성
                 guide_message = (
-                    f"{member.mention}, <#1264200662900670464> 에서 `$선수등록` 을 사용하여, 역할을 부여 받으세요.\n")
+                    f"{member.mention}, https://cafe.naver.com/espnkr 카페 가입 부탁드립니다.\n<#1264200662900670464> 에서 `$선수등록` 을 사용하여, 역할을 부여 받으세요.\n")
 
                 # 유저 가이드 채널에 메시지 보내기
                 await user_guide_channel.send(guide_message)

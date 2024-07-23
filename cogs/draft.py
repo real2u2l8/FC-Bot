@@ -47,7 +47,12 @@ class Draft(commands.Cog):
 
         await self.show_waiting_list(ctx)
 
-    @commands.command(name='대기삭제_번호')
+    @leave_waiting_list.error
+    async def leave_waiting_list_error(self, ctx, error):
+        if isinstance(error, commands.BadArgument) or isinstance(error, commands.MissingRequiredArgument):
+            await ctx.send("**$대기삭제** 만 사용하세요.")
+
+    @commands.command(name='대기삭제번호')
     async def leave_waiting_list_by_number(self, ctx, index: int):
         if ctx.channel.id != self.registration_channel_id:
             await ctx.send("이 명령어는 특정 채널에서만 사용할 수 있습니다.")

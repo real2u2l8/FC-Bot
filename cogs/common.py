@@ -32,8 +32,6 @@ class Common(commands.Cog):
             "## 관리 전용:\n"
             "**$반복멘션 @유저**\n"
             "지정된 유저를 5번 반복 멘션합니다.(매니저 전용)\n\n"
-            "**$리로드 [Cog 이름]**\n"
-            "특정 Cog를 다시 로드합니다. (관리자 전용)\n"
         )
         await ctx.send(help_message)
 

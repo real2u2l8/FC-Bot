@@ -25,7 +25,7 @@ class Service(commands.Cog):
                 description=(
                     f"{member.mention}\n"
                     "안녕하세요. **EA Sports Proclub Networks**입니다.\n\n"
-                    "#서버-규정을 꼭 읽어주시고, 즐거운 시간 되세요! 🎉"
+                    "<#1264201725464809577>을 꼭 읽어주시고, 즐거운 시간 되세요! 🎉"
                 ),
                 color=discord.Color.blue()
             )
@@ -41,8 +41,7 @@ class Service(commands.Cog):
             if user_guide_channel:
                 # 유저 가이드 메시지 작성
                 guide_message = (
-                    f"{member.mention}, #선수-등록 에서 `$선수등록` 을 사용하여, 역할을 부여 받으세요.\n#공방-출석체크 에서 출석체크 부탁드립니다!"
-                )
+                    f"{member.mention}, <#1264200662900670464> 에서 `$선수등록` 을 사용하여, 역할을 부여 받으세요.\n")
 
                 # 유저 가이드 채널에 메시지 보내기
                 await user_guide_channel.send(guide_message)
@@ -112,7 +111,7 @@ class Service(commands.Cog):
                 await thread.delete()
                 return
 
-            await ctx.send(f"{ctx.author.mention}님이 성공적으로 등록되었습니다!")
+            await ctx.send(f"{ctx.author.mention}님이 성공적으로 등록되었습니다!\n<#1264609466947604550>에서 공방 출석체크 진행중 입니다! 많은 참석 부탁드려요!!")
             await asyncio.sleep(10)
             await thread.delete()
 

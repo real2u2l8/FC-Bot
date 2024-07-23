@@ -1,4 +1,5 @@
 {
     "token": "Your Bot's Token",
-    "prefix": "$"
+    "prefix": "$",
+    "log_file": "logs/bot.log"
 }

@@ -3,15 +3,24 @@ from discord.ext import commands
 import json
 import logging
 import asyncio
+import os
 
 # Load config
 with open('config.json') as f:
     config = json.load(f)
 
+# Get the absolute path for the log file
+log_file = config.get('log_file', 'bot.log')
+log_file_path = os.path.abspath(log_file)
+
+# Ensure the log directory exists
+log_dir = os.path.dirname(log_file_path)
+if not os.path.exists(log_dir):
+    os.makedirs(log_dir)
+
 # Set up logging
-log_file = config.get('log_file', 'bot.log')  # Use the log_file path from config or default to 'bot.log'
 logging.basicConfig(level=logging.INFO, format='%(asctime)s:%(levelname)s:%(name)s: %(message)s', handlers=[
-    logging.FileHandler(log_file),
+    logging.FileHandler(log_file_path),
     logging.StreamHandler()
 ])
 

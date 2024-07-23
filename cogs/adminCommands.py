@@ -30,11 +30,8 @@ class Admin(commands.Cog):
         if not any(role.name in self.excluded_roles for role in message.author.roles):
             log_channel = self.bot.get_channel(self.message_log_channel_id)
             if log_channel:
-                print("Logging channel found for message deletion.")
-                async for entry in message.guild.audit_logs(action=discord.AuditLogAction.message_delete, limit=1):
-                    print(f"Audit log entry: {entry}")
-                    if entry.target.id == message.author.id and entry.extra.channel.id == message.channel.id:
-                        print(f"Message delete confirmed by {entry.user}")
+                async for entry in message.guild.audit_logs(action=discord.AuditLogAction.message_delete, limit=5):
+                    if entry.target.id == message.author.id and entry.extra.channel.id == message.channel.id and (entry.extra.count == 1 or entry.extra.count == 0):
                         embed = discord.Embed(title="사용자 메시지 삭제 로그", color=discord.Color.red())
                         embed.add_field(name="사용자", value=message.author.mention, inline=False)
                         embed.add_field(name="채널", value=message.channel.mention, inline=False)

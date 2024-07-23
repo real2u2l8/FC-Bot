@@ -6,7 +6,8 @@ __pycache__/
 *.json
 # C extensions
 *.so
-
+# testing file
+testing.py
 # Distribution / packaging
 .Python
 build/

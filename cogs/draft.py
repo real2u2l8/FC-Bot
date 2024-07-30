@@ -1,23 +1,19 @@
 import discord
-from discord.ext import commands, tasks
-from discord.utils import get
+from discord.ext import commands
 import random
 import asyncio
 
 class Draft(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.draft_message_ids = {}  # 채널별 드래프트 메시지 ID 저장
-        self.positions = {}  # 채널별 포지션 저장
-        self.teams = {}  # 채널별 팀 저장
-        self.user_positions = {}  # 채널별 사용자 포지션 저장
-        self.registration_channel_id = 1264757976997040240  # 대기 참가/삭제 명령어를 사용할 수 있는 채널 ID
-        self.guide_channel_id = 1264757976997040240  # 드래프트 가이드를 올릴 채널 ID
-        self.waiting_pool = []  # 대기 참가자를 저장하는 리스트
-        self.allowed_roles = ["매니저", ""]  # 명령어를 사용할 수 있는 역할 이름들
-
-    def cog_unload(self):
-        pass
+        self.draft_message_ids = {}
+        self.positions = {}
+        self.teams = {}
+        self.user_positions = {}
+        self.registration_channel_id = 1264757976997040240
+        self.waiting_pool = []
+        self.allowed_roles = ["매니저", ""]
+        self.formations = {}  # 추가된 속성: 채널별 포메이션 저장
 
     @commands.command(name='대기참가')
     async def join_waiting_list(self, ctx):
@@ -30,7 +26,6 @@ class Draft(commands.Cog):
         else:
             self.waiting_pool.append(ctx.author)
             await ctx.send(f"{ctx.author.mention}님이 대기 목록에 추가되었습니다.")
-
         await self.show_waiting_list(ctx)
 
     @commands.command(name='대기삭제')
@@ -44,7 +39,6 @@ class Draft(commands.Cog):
             await ctx.send(f"{ctx.author.mention}님이 대기 목록에서 제거되었습니다.")
         else:
             await ctx.send(f"{ctx.author.mention}님은 대기 목록에 없습니다.")
-
         await self.show_waiting_list(ctx)
 
     @leave_waiting_list.error
@@ -67,7 +61,6 @@ class Draft(commands.Cog):
             await ctx.send(f"{removed_user.mention}님이 대기 목록에서 제거되었습니다.")
         else:
             await ctx.send("잘못된 인덱스입니다. 올바른 인덱스를 입력해주세요.")
-
         await self.show_waiting_list(ctx)
 
     @commands.command(name='대기전체삭제')
@@ -84,7 +77,6 @@ class Draft(commands.Cog):
         await ctx.send("대기 목록이 초기화되었습니다.")
         await self.show_waiting_list(ctx)
 
-    # 대기현황 함수
     async def show_waiting_list(self, ctx):
         if not self.waiting_pool:
             await ctx.send("현재 대기 목록이 비어 있습니다.")
@@ -93,13 +85,8 @@ class Draft(commands.Cog):
             embed = discord.Embed(title="대기 목록 현황", description=waiting_list, color=discord.Color.blue())
             await ctx.send(embed=embed)
 
-    # 특정 역할 확인 함수
     async def has_allowed_role(self, ctx):
-        member_roles = [role.name for role in ctx.author.roles]
-        for role in self.allowed_roles:
-            if role in member_roles:
-                return True
-        return False
+        return any(role.name in self.allowed_roles for role in ctx.author.roles)
 
     @commands.command(name="드래프트")
     async def start_draft(self, ctx, team_count: str):
@@ -107,106 +94,72 @@ class Draft(commands.Cog):
             await ctx.send("팀 수는 1 또는 2만 가능합니다. 올바른 명령어 형식은 `$드래프트 1` 또는 `$드래프트 2`입니다.")
             return
 
-        self.init_draft(ctx.channel.id, int(team_count))
+        self.formations[ctx.channel.id] = ["4-3-3"] * int(team_count)
+        await self.start_draft_process(ctx, int(team_count), self.formations[ctx.channel.id])
 
-        # 서버 이모지 가져오기
-        st_emoji = discord.utils.get(ctx.guild.emojis, name='ESPN_ST')
-        lw_emoji = discord.utils.get(ctx.guild.emojis, name='ESPN_LW')
-        rw_emoji = discord.utils.get(ctx.guild.emojis, name='ESPN_RW')
-        lcm_emoji = discord.utils.get(ctx.guild.emojis, name='ESPN_CM')
-        rcm_emoji = discord.utils.get(ctx.guild.emojis, name='ESPN_CM')
-        cdm_emoji = discord.utils.get(ctx.guild.emojis, name='ESPN_DM')
-        lb_emoji = discord.utils.get(ctx.guild.emojis, name='ESPN_LB')
-        lcb_emoji = discord.utils.get(ctx.guild.emojis, name='ESPN_CB')
-        rcb_emoji = discord.utils.get(ctx.guild.emojis, name='ESPN_CB')
-        rb_emoji = discord.utils.get(ctx.guild.emojis, name='ESPN_RB')
-        gk_emoji = discord.utils.get(ctx.guild.emojis, name='ESPN_GK')
+    @commands.command(name="드래프트선택")
+    async def start_draft_with_selection(self, ctx):
+        self.formations[ctx.channel.id] = []
+        await self.select_formation(ctx, 1)
 
-        message = await ctx.send(
-            f"## {team_count}개 팀 드래프트\n"
-            "### 중복으로 눌러도 처음 누른 포지션으로 진행 되니 유의 바랍니다.\n"
-            "### 4-3-3 포메이션\n"
-        )
-        self.draft_message_ids[ctx.channel.id] = message.id
-        reactions = [
-            st_emoji, lw_emoji, rw_emoji, lcm_emoji, rcm_emoji, cdm_emoji, lb_emoji, lcb_emoji, rcb_emoji, rb_emoji, gk_emoji
-        ]
+    async def select_formation(self, ctx, team_count):
+        view = FormationSelectView(self, ctx, team_count)
+        await ctx.send("포메이션을 선택해주세요:", view=view)
 
-        # 포지션 선택 이모지 추가 및 10초 카운트다운 표시
-        countdown_message = await ctx.send(self.get_countdown_message(10, ctx))
-        for reaction in reactions:
-            await message.add_reaction(reaction)
-        
-        for i in range(10, 0, -1):
-            await asyncio.sleep(1)
-            await countdown_message.edit(content=self.get_countdown_message(i, ctx))
-        await asyncio.sleep(1)
-        await countdown_message.delete()
+    async def start_draft_process(self, ctx, team_count, formations):
+        self.init_draft(ctx.channel.id, team_count, formations)
+
+        for i in range(1, team_count + 1):
+            formation = formations[i - 1]
+            message = await ctx.send(
+                f"## {team_count}개 팀 드래프트 - {formation}\n"
+                "### 중복으로 눌러도 처음 누른 포지션으로 진행 되니 유의 바랍니다.\n"
+            )
+            self.draft_message_ids[ctx.channel.id] = message.id
+
+            for emoji_name in self.get_emojis_for_formation(formation).values():
+                emoji = discord.utils.get(ctx.guild.emojis, name=emoji_name)
+                await message.add_reaction(emoji)
+
+            countdown_message = await ctx.send(self.get_countdown_message(10))
+            for i in range(9, -1, -1):
+                await asyncio.sleep(1)
+                await countdown_message.edit(content=self.get_countdown_message(i))
+            await countdown_message.delete()
 
         await self.complete_draft(ctx, int(team_count))
 
-    def init_draft(self, channel_id, team_count):
-        self.positions[channel_id] = {
-            "ST": [],
-            "LW": [],
-            "RW": [],
-            "LCM": [],
-            "RCM": [],
-            "CDM": [],
-            "LB": [],
-            "RB": [],
-            "LCB": [],
-            "RCB": [],
-            "GK": []
-        }
-        self.teams[channel_id] = {
-            "Team 1": {
-                "ST": None,
-                "LW": None,
-                "RW": None,
-                "LCM": None,
-                "RCM": None,
-                "CDM": None,
-                "LB": None,
-                "RB": None,
-                "LCB": None,
-                "RCB": None,
-                "GK": None
-            },
-            "Team 2": {
-                "ST": None,
-                "LW": None,
-                "RW": None,
-                "LCM": None,
-                "RCM": None,
-                "CDM": None,
-                "LB": None,
-                "RB": None,
-                "LCB": None,
-                "RCB": None,
-                "GK": None
-            } if team_count == 2 else {}
-        }
+    def init_draft(self, channel_id, team_count, formations):
+        self.positions[channel_id] = {f"Team {i+1}": {pos: [] for pos in self.get_positions_for_formation(formations[i])} for i in range(team_count)}
+        self.teams[channel_id] = {f"Team {i+1}": {pos: None for pos in self.get_positions_for_formation(formations[i])} for i in range(team_count)}
         self.user_positions[channel_id] = {}
 
-    def get_countdown_message(self, seconds, ctx):
-        question_emoji = get(ctx.guild.emojis, name='question_mark')
-        if question_emoji is None:
-            question_emoji = '❓'  # Default to ❓ if custom emoji is not found
-
-        number_emoji_map = {
-            1: "1️⃣",
-            2: "2️⃣",
-            3: "3️⃣",
-            4: "4️⃣",
-            5: "5️⃣",
-            6: "6️⃣",
-            7: "7️⃣",
-            8: "8️⃣",
-            9: "9️⃣",
-            10: "🔟",
+    def get_positions_for_formation(self, formation):
+        formations = {
+            "4-3-3": ["ST", "LW", "RW", "LCM", "RCM", "CDM", "LB", "LCB", "RCB", "RB", "GK"],
+            "4-2-3-1": ["ST", "LW", "AM", "RW", "LCM", "RCM", "LB", "LCB", "RCB", "RB", "GK"],
+            "3-4-3": ["ST", "LF", "RF", "LCM", "RCM", "LB", "RB", "LCB", "RCB", "CB", "GK"],
+            "3-5-2 (CAM)": ["LF", "RF", "AM", "LCM", "RCM", "LB", "RB", "LCB", "RCB", "CB", "GK"],
+            "3-5-2 (CDM)": ["LF", "RF", "LCM", "RCM", "CDM", "LB", "RB", "LCB", "RCB", "CB", "GK"],
         }
-        return f"**카운트다운 {number_emoji_map.get(seconds, str(question_emoji))} 초 남았습니다!**"
+        return formations.get(formation, [])
+
+    def get_emojis_for_formation(self, formation):
+        emojis = {
+            "4-3-3": {'ST': 'ESPN_ST', 'LW': 'ESPN_LW', 'RW': 'ESPN_RW', 'LCM': 'ESPN_CM', 'RCM': 'ESPN_CM', 'CDM': 'ESPN_DM', 'LB': 'ESPN_LB', 'LCB': 'ESPN_CB', 'RCB': 'ESPN_CB', 'RB': 'ESPN_RB', 'GK': 'ESPN_GK'},
+            "4-2-3-1": {'ST': 'ESPN_ST', 'LW': 'ESPN_LW', 'RW': 'ESPN_RW', 'AM': 'ESPN_AM', 'LCM': 'ESPN_CM', 'RCM': 'ESPN_CM', 'LB': 'ESPN_LB', 'LCB': 'ESPN_CB', 'RCB': 'ESPN_CB', 'RB': 'ESPN_RB', 'GK': 'ESPN_GK'},
+            "3-4-3": {'ST': 'ESPN_ST', 'LF': 'ESPN_LF', 'RF': 'ESPN_RF', 'LCM': 'ESPN_CM', 'RCM': 'ESPN_CM', 'LB': 'ESPN_LB', 'RB': 'ESPN_RB', 'LCB': 'ESPN_CB', 'RCB': 'ESPN_CB', 'CB': 'ESPN_CB', 'GK': 'ESPN_GK'},
+            "3-5-2 (CAM)": {'LF': 'ESPN_LF', 'RF': 'ESPN_RF', 'AM': 'ESPN_AM', 'LCM': 'ESPN_CM', 'RCM': 'ESPN_CM', 'LB': 'ESPN_LB', 'RB': 'ESPN_RB', 'LCB': 'ESPN_CB', 'RCB': 'ESPN_CB', 'CB': 'ESPN_CB', 'GK': 'ESPN_GK'},
+            "3-5-2 (CDM)": {'LF': 'ESPN_LF', 'RF': 'ESPN_RF', 'LCM': 'ESPN_CM', 'RCM': 'ESPN_CM', 'CDM': 'ESPN_DM', 'LB': 'ESPN_LB', 'RB': 'ESPN_RB', 'LCB': 'ESPN_CB', 'RCB': 'ESPN_CB', 'CB': 'ESPN_CB', 'GK': 'ESPN_GK'},
+        }
+        return emojis.get(formation, {})
+
+    def get_countdown_message(self, seconds):
+        number_emoji_map = {
+            1: "1️⃣", 2: "2️⃣", 3: "3️⃣", 4: "4️⃣", 5: "5️⃣",
+            6: "6️⃣", 7: "7️⃣", 8: "8️⃣", 9: "9️⃣", 10: "🔟",
+        }
+        return f"**카운트다운 {number_emoji_map.get(seconds, '❓')} 초 남았습니다!**"
 
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):
@@ -214,76 +167,56 @@ class Draft(commands.Cog):
             return
 
         channel_id = reaction.message.channel.id
-        if user.id in self.user_positions[channel_id]:  # 사용자가 이미 포지션을 선택했는지 확인
+        if user.id in self.user_positions[channel_id]:
             return
 
         position_map = {
-            "ESPN_ST": "ST",
-            "ESPN_LW": "LW",
-            "ESPN_RW": "RW",
-            "ESPN_CM": "LCM" if len(self.positions[channel_id]["LCM"]) <= len(self.positions[channel_id]["RCM"]) else "RCM",
-            "ESPN_DM": "CDM",
-            "ESPN_LB": "LB",
-            "ESPN_RB": "RB",
-            "ESPN_CB": "LCB" if len(self.positions[channel_id]["LCB"]) <= len(self.positions[channel_id]["RCB"]) else "RCB",
-            "ESPN_GK": "GK"
+            "ESPN_ST": "ST", "ESPN_LW": "LW", "ESPN_RW": "RW",
+            "ESPN_CM": "LCM", "ESPN_DM": "CDM", "ESPN_LB": "LB", "ESPN_RB": "RB",
+            "ESPN_CB": "LCB", "ESPN_GK": "GK", "ESPN_AM": "AM", "ESPN_LF": "LF", "ESPN_RF": "RF",
         }
+
+        formation = self.formations[channel_id][0] if len(self.formations[channel_id]) == 1 else "4-3-3"
+        positions = self.get_positions_for_formation(formation)
+        position_map = {emoji: pos for pos, emoji in zip(positions, self.get_emojis_for_formation(formation).values())}
 
         position = position_map.get(reaction.emoji.name)
         if position:
-            self.positions[channel_id][position].append(user)
-            self.user_positions[channel_id][user.id] = position  # 사용자 포지션 저장
+            self.positions[channel_id][f"Team {1 if reaction.message.id == list(self.draft_message_ids.values())[0] else 2}"][position].append(user)
+            self.user_positions[channel_id][user.id] = position
 
     async def complete_draft(self, ctx, team_count):
         channel_id = ctx.channel.id
         unselected_users = []
 
-        for position, users in self.positions[channel_id].items():
-            if position in ["LCB", "RCB"]:
-                chosen_users = random.sample(users, min(2 if team_count == 2 else 1, len(users)))
-                for i, chosen_user in enumerate(chosen_users):
-                    team = "Team 1" if i < 1 else "Team 2"
-                    self.teams[channel_id][team][position] = chosen_user
-                unselected_users.extend([user for user in users if user not in chosen_users])
-            else:
+        for team in range(1, team_count + 1):
+            for position, users in self.positions[channel_id][f"Team {team}"].items():
                 if users:
-                    chosen_users = random.sample(users, min(team_count, len(users)))
-                    for i, chosen_user in enumerate(chosen_users):
-                        team = "Team 1" if i == 0 else "Team 2"
-                        self.teams[channel_id][team][position] = chosen_user
+                    chosen_users = random.sample(users, 1)
+                    for chosen_user in chosen_users:
+                        self.teams[channel_id][f"Team {team}"][position] = chosen_user
                     unselected_users.extend([user for user in users if user not in chosen_users])
 
         # Team 1 임베드 생성
         embed_team1 = discord.Embed(title="A팀 드래프트 결과", color=discord.Color.blue())
-        embed_team1.add_field(name="포워드", value=self.get_team_field(channel_id, "Team 1", "ST", "LW", "RW"), inline=False)
-        embed_team1.add_field(name="미드필더", value=self.get_team_field(channel_id, "Team 1", "LCM", "RCM", "CDM"), inline=False)
-        embed_team1.add_field(name="수비수", value=self.get_team_field(channel_id, "Team 1", "LB", "LCB", "RCB", "RB"), inline=False)
-        embed_team1.add_field(name="골키퍼", value=self.get_user_mention(channel_id, "Team 1", "GK"), inline=False)
+        for position in self.get_positions_for_formation(self.formations[channel_id][0]):
+            embed_team1.add_field(name=position, value=self.get_user_mention(channel_id, "Team 1", position), inline=False)
         await ctx.send(embed=embed_team1)
 
         # Team 2 임베드 생성
         if team_count == 2:
             embed_team2 = discord.Embed(title="B팀 드래프트 결과", color=discord.Color.red())
-            embed_team2.add_field(name="포워드", value=self.get_team_field(channel_id, "Team 2", "ST", "LW", "RW"), inline=False)
-            embed_team2.add_field(name="미드필더", value=self.get_team_field(channel_id, "Team 2", "LCM", "RCM", "CDM"), inline=False)
-            embed_team2.add_field(name="수비수", value=self.get_team_field(channel_id, "Team 2", "LB", "LCB", "RCB", "RB"), inline=False)
-            embed_team2.add_field(name="골키퍼", value=self.get_user_mention(channel_id, "Team 2", "GK"), inline=False)
+            for position in self.get_positions_for_formation(self.formations[channel_id][1]):
+                embed_team2.add_field(name=position, value=self.get_user_mention(channel_id, "Team 2", position), inline=False)
             await ctx.send(embed=embed_team2)
 
         if unselected_users:
             unselected_message = "포지션에 선택되지 않은 인원:\n"
-            for user in unselected_users:
-                for position, users in self.positions[channel_id].items():
-                    if user in users:
-                        unselected_message += f"{user.mention} - {position}\n"
+            unselected_message += "\n".join(f"{user.mention} - {self.user_positions[channel_id][user.id]}" for user in unselected_users)
             await ctx.send(unselected_message)
             await ctx.send(f'**$뽑기 [포지션]** 명령어를 사용하여 포지션 경쟁을 시작하세요.\n')
 
-        # Reset draft state for the channel
         self.reset_draft(channel_id)
-
-    def get_team_field(self, channel_id, team, *positions):
-        return "\n".join([f"{pos} - {self.get_user_mention(channel_id, team, pos)}" for pos in positions])
 
     def get_user_mention(self, channel_id, team, position):
         user = self.teams[channel_id][team].get(position)
@@ -294,6 +227,38 @@ class Draft(commands.Cog):
         self.user_positions.pop(channel_id, None)
         self.positions.pop(channel_id, None)
         self.teams.pop(channel_id, None)
+        self.formations.pop(channel_id, None)
+
+class FormationSelectView(discord.ui.View):
+    def __init__(self, cog, ctx, team_count):
+        super().__init__(timeout=180)
+        self.cog = cog
+        self.ctx = ctx
+        self.team_count = team_count
+        for i in range(1, team_count + 1):
+            self.add_item(FormationSelect(f"Team {i} 포메이션 선택", self))
+
+    async def on_timeout(self):
+        await self.cog.reset_draft(self.ctx.channel.id)
+
+class FormationSelect(discord.ui.Select):
+    def __init__(self, placeholder, view):
+        options = [
+            discord.SelectOption(label="4-3-3", description="4-3-3 포메이션"),
+            discord.SelectOption(label="4-2-3-1", description="4-2-3-1 포메이션"),
+            discord.SelectOption(label="3-4-3", description="3-4-3 포메이션"),
+            discord.SelectOption(label="3-5-2 (CAM)", description="3-5-2 (CAM) 포메이션"),
+            discord.SelectOption(label="3-5-2 (CDM)", description="3-5-2 (CDM) 포메이션")
+        ]
+        super().__init__(placeholder=placeholder, min_values=1, max_values=1, options=options)
+        self.custom_view = view
+
+    async def callback(self, interaction: discord.Interaction):
+        formation = self.values[0]
+        await interaction.response.send_message(f"{formation} 포메이션이 선택되었습니다.", ephemeral=True)
+        self.custom_view.cog.formations[self.custom_view.ctx.channel.id].append(formation)
+        if len(self.custom_view.cog.formations[self.custom_view.ctx.channel.id]) == self.custom_view.team_count:
+            await self.custom_view.cog.start_draft_process(self.custom_view.ctx, self.custom_view.team_count, self.custom_view.cog.formations[self.custom_view.ctx.channel.id])
 
 async def setup(bot):
     await bot.add_cog(Draft(bot))

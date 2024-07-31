@@ -10,7 +10,7 @@ class AutoMessage(commands.Cog):
     def cog_unload(self):
         self.send_guide_message.cancel()
 
-    @tasks.loop(minutes=30)  # 몇 분마다 자동 메시지 전송
+    @tasks.loop(minutes=240)  # 몇 분마다 자동 메시지 전송
     async def send_guide_message(self):
         guide_channel = self.bot.get_channel(self.guide_channel_id)
         if guide_channel:

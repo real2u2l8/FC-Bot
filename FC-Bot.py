@@ -25,16 +25,23 @@ log_dirs = {
 for path in log_dirs.values():
     os.makedirs(path, exist_ok=True)
 
-# 현재 시간을 로그 파일 이름에 추가
-timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-
 # 로그 핸들러 설정
 loggers = {}
 for key, path in log_dirs.items():
-    log_file = os.path.join(path, f'{key}_log_{timestamp}')
+    # 타임스탬프를 파일 이름에 추가
+    timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+    log_file = os.path.join(path, f'{key}_log_{timestamp}.log')  # 타임스탬프가 포함된 파일 이름 생성
+
+    # 타임스탬프가 포함된 파일 생성
+    with open(log_file, 'a'):  # 파일을 생성한 후 닫기
+        pass
+
     logger = logging.getLogger(key)
     logger.setLevel(logging.INFO)
-    handler = TimedRotatingFileHandler(log_file, when='h', interval=4, backupCount=6)  # 4시간마다 로그 회전
+
+    # TimedRotatingFileHandler 설정
+    handler = TimedRotatingFileHandler(log_file, when='h', interval=4, backupCount=6, encoding='utf-8')
+    handler.suffix = "%Y-%m-%d_%H-%M-%S"  # 회전된 로그 파일의 타임스탬프 형식
     handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
     logger.addHandler(handler)
     loggers[key] = logger
@@ -51,7 +58,7 @@ def handle_exception(exc_type, exc_value, exc_traceback):
 
     # 타임스탬프를 포함한 에러 로그 파일 생성
     error_time = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-    error_log_file = os.path.join(log_dirs['errors'], f'python_error_{error_time}')
+    error_log_file = os.path.join(log_dirs['errors'], f'python_error_{error_time}.log')
     
     # 메인 로그에 에러 발생을 기록
     loggers['errors'].error(f"An unhandled exception occurred. See {error_log_file} for details.")

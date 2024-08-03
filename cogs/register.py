@@ -3,13 +3,15 @@ from discord.ext import commands
 import re
 import asyncio
 import aiohttp
-from bs4 import BeautifulSoup
+import logging
 
 class Register(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.registration_channel_id = 1264200662900670464  # 선수-등록 채널 ID
-    
+        self.max_retries = 5  # 최대 재시도 횟수
+        self.base_retry_delay = 5  # 첫 재시도 대기 시간 (초)
+
     @commands.command(name='선수등록')
     async def start_registration(self, ctx, cafe_link: str = None):
         if ctx.channel.id != self.registration_channel_id:
@@ -68,8 +70,11 @@ class Register(commands.Cog):
                 await thread.delete()
                 return
 
+            # 카페 게시글을 확인 중임을 알림
+            await thread.send(":선수등록 게시글을 확인하고 있습니다.")
+
             # 게시글이 존재하는지 확인
-            post_exists = await self.check_post_exists(cafe_link)
+            post_exists = await self.retry_check_post_exists(cafe_link, thread)
             if post_exists:
                 if role:
                     try:
@@ -97,6 +102,23 @@ class Register(commands.Cog):
             await thread.send(f"{ctx.author.mention}, 5분 내에 닉네임을 입력하지 않아 등록이 취소되었습니다.")
             await asyncio.sleep(10)
             await thread.delete()
+
+    async def retry_check_post_exists(self, cafe_link, thread):
+        """재시도 로직을 포함한 게시글 존재 여부 확인 함수"""
+        for attempt in range(self.max_retries):
+            try:
+                post_exists = await self.check_post_exists(cafe_link)
+                if post_exists:
+                    return True
+                else:
+                    raise Exception("게시글을 찾을 수 없음")
+            except Exception as e:
+                logging.warning(f"Attempt {attempt + 1} failed: {e}")
+                if attempt < self.max_retries - 1:
+                    await asyncio.sleep(self.base_retry_delay * (2 ** attempt))  # 지수 백오프
+                else:
+                    await thread.send(f"네트워크 오류로 인해 선수등록을 진행 할 수 없습니다. 매니저를 호출해주세요.")
+                    return False
 
     async def check_post_exists(self, cafe_link):
         # 네이버 카페 페이지를 요청

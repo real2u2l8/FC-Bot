@@ -13,7 +13,7 @@ class Draft(commands.Cog):
         self.registration_channel_id = 1264757976997040240
         self.waiting_pool = []
         self.allowed_roles = ["매니저", ""]
-        self.formations = {}  # 추가된 속성: 채널별 포메이션 저장
+        self.formations = {}
 
     @commands.command(name='대기참가')
     async def join_waiting_list(self, ctx):
@@ -181,9 +181,21 @@ class Draft(commands.Cog):
         position_map = {emoji: pos for pos, emoji in zip(positions, self.get_emojis_for_formation(formation).values())}
 
         position = position_map.get(reaction.emoji.name)
-        if position:
+        if position in ["CB", "CM"]:  # 중복될 수 있는 포지션 처리
+            if position == "CB":
+                if self.teams[channel_id][f"Team {1 if reaction.message.id == list(self.draft_message_ids.values())[0] else 2}"]["LCB"] is None:
+                    position = "LCB"
+                else:
+                    position = "RCB"
+            elif position == "CM":
+                if self.teams[channel_id][f"Team {1 if reaction.message.id == list(self.draft_message_ids.values())[0] else 2}"]["LCM"] is None:
+                    position = "LCM"
+                else:
+                    position = "RCM"
             self.positions[channel_id][f"Team {1 if reaction.message.id == list(self.draft_message_ids.values())[0] else 2}"][position].append(user)
-            self.user_positions[channel_id][user.id] = position
+        elif position:
+            self.positions[channel_id][f"Team {1 if reaction.message.id == list(self.draft_message_ids.values())[0] else 2}"][position].append(user)
+        self.user_positions[channel_id][user.id] = position
 
     async def complete_draft(self, ctx, team_count):
         channel_id = ctx.channel.id

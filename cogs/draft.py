@@ -136,21 +136,21 @@ class Draft(commands.Cog):
 
     def get_positions_for_formation(self, formation):
         formations = {
-            "4-3-3": ["ST", "LW", "RW", "LCM", "RCM", "CDM", "LB", "LCB", "RCB", "RB", "GK"],
-            "4-2-3-1": ["ST", "LW", "AM", "RW", "LCM", "RCM", "LB", "LCB", "RCB", "RB", "GK"],
-            "3-4-3": ["ST", "LF", "RF", "LCM", "RCM", "LB", "RB", "LCB", "RCB", "CB", "GK"],
-            "3-5-2 (CAM)": ["LF", "RF", "AM", "LCM", "RCM", "LB", "RB", "LCB", "RCB", "CB", "GK"],
-            "3-5-2 (CDM)": ["LF", "RF", "LCM", "RCM", "CDM", "LB", "RB", "LCB", "RCB", "CB", "GK"],
+            "4-3-3": ["ST", "LW", "RW", "CM", "CDM", "LB", "CB", "CB", "RB", "GK"],
+            "4-2-3-1": ["ST", "LW", "RW", "AM", "CM", "LB", "CB", "CB", "RB", "GK"],
+            "3-4-3": ["ST", "LF", "RF", "CM", "LB", "RB", "CB", "GK"],
+            "3-5-2 (CAM)": ["LF", "RF", "AM", "CM", "LB", "RB", "CB", "CB", "CB", "GK"],
+            "3-5-2 (CDM)": ["LF", "RF", "CM", "CDM", "LB", "RB", "CB", "CB", "CB", "GK"],
         }
         return formations.get(formation, [])
 
     def get_emojis_for_formation(self, formation):
         emojis = {
-            "4-3-3": {'ST': 'ESPN_ST', 'LW': 'ESPN_LW', 'RW': 'ESPN_RW', 'LCM': 'ESPN_CM', 'RCM': 'ESPN_CM', 'CDM': 'ESPN_DM', 'LB': 'ESPN_LB', 'LCB': 'ESPN_CB', 'RCB': 'ESPN_CB', 'RB': 'ESPN_RB', 'GK': 'ESPN_GK'},
-            "4-2-3-1": {'ST': 'ESPN_ST', 'LW': 'ESPN_LW', 'RW': 'ESPN_RW', 'AM': 'ESPN_AM', 'LCM': 'ESPN_CM', 'RCM': 'ESPN_CM', 'LB': 'ESPN_LB', 'LCB': 'ESPN_CB', 'RCB': 'ESPN_CB', 'RB': 'ESPN_RB', 'GK': 'ESPN_GK'},
-            "3-4-3": {'ST': 'ESPN_ST', 'LF': 'ESPN_LF', 'RF': 'ESPN_RF', 'LCM': 'ESPN_CM', 'RCM': 'ESPN_CM', 'LB': 'ESPN_LB', 'RB': 'ESPN_RB', 'LCB': 'ESPN_CB', 'RCB': 'ESPN_CB', 'CB': 'ESPN_CB', 'GK': 'ESPN_GK'},
-            "3-5-2 (CAM)": {'LF': 'ESPN_LF', 'RF': 'ESPN_RF', 'AM': 'ESPN_AM', 'LCM': 'ESPN_CM', 'RCM': 'ESPN_CM', 'LB': 'ESPN_LB', 'RB': 'ESPN_RB', 'LCB': 'ESPN_CB', 'RCB': 'ESPN_CB', 'CB': 'ESPN_CB', 'GK': 'ESPN_GK'},
-            "3-5-2 (CDM)": {'LF': 'ESPN_LF', 'RF': 'ESPN_RF', 'LCM': 'ESPN_CM', 'RCM': 'ESPN_CM', 'CDM': 'ESPN_DM', 'LB': 'ESPN_LB', 'RB': 'ESPN_RB', 'LCB': 'ESPN_CB', 'RCB': 'ESPN_CB', 'CB': 'ESPN_CB', 'GK': 'ESPN_GK'},
+            "4-3-3": {'ST': 'ESPN_ST', 'LW': 'ESPN_LW', 'RW': 'ESPN_RW', 'CM': 'ESPN_CM', 'CDM': 'ESPN_DM', 'LB': 'ESPN_LB', 'CB': 'ESPN_CB', 'RB': 'ESPN_RB', 'GK': 'ESPN_GK'},
+            "4-2-3-1": {'ST': 'ESPN_ST', 'LW': 'ESPN_LW', 'RW': 'ESPN_RW', 'AM': 'ESPN_AM', 'CM': 'ESPN_CM', 'LB': 'ESPN_LB', 'CB': 'ESPN_CB', 'RB': 'ESPN_RB', 'GK': 'ESPN_GK'},
+            "3-4-3": {'ST': 'ESPN_ST', 'LF': 'ESPN_LF', 'RF': 'ESPN_RF', 'CM': 'ESPN_CM', 'LB': 'ESPN_LB', 'RB': 'ESPN_RB', 'CB': 'ESPN_CB', 'GK': 'ESPN_GK'},
+            "3-5-2 (CAM)": {'LF': 'ESPN_LF', 'RF': 'ESPN_RF', 'AM': 'ESPN_AM', 'CM': 'ESPN_CM', 'LB': 'ESPN_LB', 'RB': 'ESPN_RB', 'CB': 'ESPN_CB', 'GK': 'ESPN_GK'},
+            "3-5-2 (CDM)": {'LF': 'ESPN_LF', 'RF': 'ESPN_RF', 'CM': 'ESPN_CM', 'CDM': 'ESPN_DM', 'LB': 'ESPN_LB', 'RB': 'ESPN_RB', 'CB': 'ESPN_CB', 'GK': 'ESPN_GK'},
         }
         return emojis.get(formation, {})
 
@@ -172,8 +172,8 @@ class Draft(commands.Cog):
 
         position_map = {
             "ESPN_ST": "ST", "ESPN_LW": "LW", "ESPN_RW": "RW",
-            "ESPN_CM": "LCM", "ESPN_DM": "CDM", "ESPN_LB": "LB", "ESPN_RB": "RB",
-            "ESPN_CB": "LCB", "ESPN_GK": "GK", "ESPN_AM": "AM", "ESPN_LF": "LF", "ESPN_RF": "RF",
+            "ESPN_CM": "CM", "ESPN_DM": "CDM", "ESPN_LB": "LB", "ESPN_RB": "RB",
+            "ESPN_CB": "CB", "ESPN_GK": "GK", "ESPN_AM": "AM", "ESPN_LF": "LF", "ESPN_RF": "RF",
         }
 
         formation = self.formations[channel_id][0] if len(self.formations[channel_id]) == 1 else "4-3-3"
@@ -181,21 +181,9 @@ class Draft(commands.Cog):
         position_map = {emoji: pos for pos, emoji in zip(positions, self.get_emojis_for_formation(formation).values())}
 
         position = position_map.get(reaction.emoji.name)
-        if position in ["CB", "CM"]:  # 중복될 수 있는 포지션 처리
-            if position == "CB":
-                if self.teams[channel_id][f"Team {1 if reaction.message.id == list(self.draft_message_ids.values())[0] else 2}"]["LCB"] is None:
-                    position = "LCB"
-                else:
-                    position = "RCB"
-            elif position == "CM":
-                if self.teams[channel_id][f"Team {1 if reaction.message.id == list(self.draft_message_ids.values())[0] else 2}"]["LCM"] is None:
-                    position = "LCM"
-                else:
-                    position = "RCM"
+        if position:
             self.positions[channel_id][f"Team {1 if reaction.message.id == list(self.draft_message_ids.values())[0] else 2}"][position].append(user)
-        elif position:
-            self.positions[channel_id][f"Team {1 if reaction.message.id == list(self.draft_message_ids.values())[0] else 2}"][position].append(user)
-        self.user_positions[channel_id][user.id] = position
+            self.user_positions[channel_id][user.id] = position
 
     async def complete_draft(self, ctx, team_count):
         channel_id = ctx.channel.id

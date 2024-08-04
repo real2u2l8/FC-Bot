@@ -165,22 +165,23 @@ class ChannelSelect(Select):
             await interaction.response.send_message("선택한 채널에 참여하고 있는 멤버가 없습니다.", ephemeral=True)
             return
 
-        mentions = " ".join(member.mention for member in selected_channel.members)
-        await interaction.response.send_message(f"{selected_channel.name} 채널에 있는 멤버들: {mentions}")
+        mentions = "\n".join(member.mention for member in selected_channel.members)
+        await interaction.response.send_message(f"{selected_channel.name} 채널에 있는 멤버들:\n{mentions}")
 
         # 버튼을 눌러야 최종적으로 멘션 메시지가 전송되도록 함
         view = ConfirmMentionView(mentions)
-        await interaction.followup.send(f"{selected_channel.name} 채널의 멤버를 멘션하시겠습니까?", view=view)
+        await interaction.followup.send(f"{selected_channel.name} 채널의 멤버를 멘션하시겠습니까?", view=view, ephemeral=True)
 
 class ConfirmMentionView(View):
     def __init__(self, mentions):
         super().__init__()
         self.mentions = mentions
-        self.add_item(Button(label="멘션 보내기", style=discord.ButtonStyle.green, custom_id="confirm"))
+        # self.add_item(Button(label="멘션 보내기", style=discord.ButtonStyle.green, custom_id="confirm"))
 
     @discord.ui.button(label="멘션 보내기", style=discord.ButtonStyle.green)
     async def confirm(self, interaction: discord.Interaction, button: Button):
         await interaction.response.send_message(self.mentions)
+        await interaction.message.delete()  # 멘션 전송 후 버튼 메시지 삭제
 
 async def setup(bot):
     await bot.add_cog(Admin(bot))

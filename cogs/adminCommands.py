@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+from discord.ui import View, Select, Button
 import logging
 
 class Admin(commands.Cog):
@@ -132,6 +133,54 @@ class Admin(commands.Cog):
                     break
         else:
             print("Logging channel not found for channel delete.")
+
+    ### 음성 채널 멘션 기능
+    @commands.command(name='채널멘션')
+    @commands.has_any_role('매니저')
+    async def channel_mention(self, ctx):
+        """서버 내의 모든 음성 채널을 드롭다운 메뉴로 표시"""
+        voice_channels = [channel for channel in ctx.guild.voice_channels]
+        if not voice_channels:
+            await ctx.send("서버에 음성 채널이 없습니다.")
+            return
+
+        view = ChannelSelectView(voice_channels)
+        await ctx.send("멘션할 음성 채널을 선택하세요:", view=view)
+
+class ChannelSelectView(View):
+    def __init__(self, voice_channels):
+        super().__init__()
+        options = [discord.SelectOption(label=channel.name, value=str(channel.id)) for channel in voice_channels]
+        self.add_item(ChannelSelect(options))
+
+class ChannelSelect(Select):
+    def __init__(self, options):
+        super().__init__(placeholder="음성 채널을 선택하세요...", options=options)
+
+    async def callback(self, interaction: discord.Interaction):
+        selected_channel_id = int(self.values[0])
+        selected_channel = interaction.guild.get_channel(selected_channel_id)
+
+        if not selected_channel.members:
+            await interaction.response.send_message("선택한 채널에 참여하고 있는 멤버가 없습니다.", ephemeral=True)
+            return
+
+        mentions = " ".join(member.mention for member in selected_channel.members)
+        await interaction.response.send_message(f"{selected_channel.name} 채널에 있는 멤버들: {mentions}")
+
+        # 버튼을 눌러야 최종적으로 멘션 메시지가 전송되도록 함
+        view = ConfirmMentionView(mentions)
+        await interaction.followup.send(f"{selected_channel.name} 채널의 멤버를 멘션하시겠습니까?", view=view)
+
+class ConfirmMentionView(View):
+    def __init__(self, mentions):
+        super().__init__()
+        self.mentions = mentions
+        self.add_item(Button(label="멘션 보내기", style=discord.ButtonStyle.green, custom_id="confirm"))
+
+    @discord.ui.button(label="멘션 보내기", style=discord.ButtonStyle.green)
+    async def confirm(self, interaction: discord.Interaction, button: Button):
+        await interaction.response.send_message(self.mentions)
 
 async def setup(bot):
     await bot.add_cog(Admin(bot))

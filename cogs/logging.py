@@ -2,12 +2,12 @@ import discord
 from discord.ext import commands, tasks
 import os
 from discord.ui import View, Button, Select
-import datetime
 import logging
 from logging.handlers import TimedRotatingFileHandler
 import sys
 import traceback
 import asyncio
+from datetime import datetime
 
 class Logging(commands.Cog):
     def __init__(self, bot):
@@ -80,6 +80,35 @@ class Logging(commands.Cog):
                 f"에러 메시지: ```{exc_type.__name__}: {exc_value}```\n"
                 f"자세한 내용은 로그 파일을 참조하세요."
             )
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        """봇이 준비되었을 때 상태를 로깅"""
+        self.loggers['state'].info(f'Logged in as {self.bot.user.name} - {self.bot.user.id}')
+        await self.bot.change_presence(activity=discord.Game(name="Logging!"))
+
+    @commands.Cog.listener()
+    async def on_command(self, ctx):
+        """모든 명령어 사용 시 로깅"""
+        self.loggers['commands'].info(f'Command executed: {ctx.command} by {ctx.author} in {ctx.channel}')
+        if ctx.command.name in self.monitor_commands:
+            self.loggers['commands'].info(f'Monitored command executed: {ctx.command} by {ctx.author} in {ctx.channel}')
+
+    @commands.Cog.listener()
+    async def on_command_error(self, ctx, error):
+        """명령어 실행 중 에러 발생 시 로깅"""
+        self.loggers['commands'].error(f'Error in command {ctx.command}: {error}', exc_info=True)
+        self.loggers['errors'].error(f'Error in command {ctx.command}: {error}', exc_info=True)
+
+    @commands.Cog.listener()
+    async def on_member_join(self, member):
+        """사용자 활동 로그 - 서버에 새로운 멤버 가입 시"""
+        self.loggers['user_activity'].info(f'Member joined: {member.name} (ID: {member.id})')
+
+    @commands.Cog.listener()
+    async def on_member_remove(self, member):
+        """사용자 활동 로그 - 멤버가 서버를 떠날 시"""
+        self.loggers['user_activity'].info(f'Member left: {member.name} (ID: {member.id})')
 
     @commands.command(name='로그')
     @commands.has_role('매니저')  # '매니저' 역할을 가진 사용자만 이 명령어를 사용할 수 있습니다.
@@ -154,7 +183,7 @@ class Logging(commands.Cog):
         # 요약 보고서를 파일로 저장
         result_dir = 'logs/result/'
         os.makedirs(result_dir, exist_ok=True)
-        report_file = os.path.join(result_dir, f'log_summary_{datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}')
+        report_file = os.path.join(result_dir, f'log_summary_{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}')
         with open(report_file, 'w') as f:
             f.write("\n".join(summary_report))
 
@@ -167,29 +196,6 @@ class Logging(commands.Cog):
         if isinstance(error, commands.MissingRole):
             await ctx.send("이 명령어를 사용하려면 '매니저' 역할이 필요합니다.")
 
-    @commands.Cog.listener()
-    async def on_command(self, ctx):
-        """특정 명령어 사용 시 로깅"""
-        if ctx.command.name in self.monitor_commands:
-            log_file = os.path.join(self.log_dirs['commands'], f'{ctx.command.name}_log')
-            with open(log_file, 'a') as f:
-                f.write(f'{datetime.datetime.now()}: {ctx.author} used {ctx.command.name} in {ctx.channel}\n')
-
-    @commands.Cog.listener()
-    async def on_member_join(self, member):
-        """사용자 활동 로그 - 서버에 새로운 멤버 가입 시"""
-        log_file = os.path.join(self.log_dirs['user_activity'], 'user_activity_log')
-        with open(log_file, 'a') as f:
-            f.write(f'{datetime.datetime.now()}: {member.name} joined the server.\n')
-
-    @commands.Cog.listener()
-    async def on_member_remove(self, member):
-        """사용자 활동 로그 - 멤버가 서버를 떠날 시"""
-        log_file = os.path.join(self.log_dirs['user_activity'], 'user_activity_log')
-        with open(log_file, 'a') as f:
-            f.write(f'{datetime.datetime.now()}: {member.name} left the server.\n')
-
-# 로그 카테고리 선택 뷰
 class LogCategoryView(View):
     def __init__(self, log_dirs):
         super().__init__()
@@ -197,7 +203,6 @@ class LogCategoryView(View):
         for category in log_dirs.keys():
             self.add_item(LogCategoryButton(category, log_dirs[category]))
 
-# 로그 카테고리 버튼
 class LogCategoryButton(Button):
     def __init__(self, category, log_dir):
         super().__init__(label=category, style=discord.ButtonStyle.primary)
@@ -211,14 +216,12 @@ class LogCategoryButton(Button):
             view = LogFileView(self.log_dir, files)
             await interaction.response.send_message(f"Select a log file from {self.label}:", view=view, ephemeral=True)
 
-# 로그 파일 뷰
 class LogFileView(View):
     def __init__(self, log_dir, files):
         super().__init__()
         options = [discord.SelectOption(label=file) for file in files]
         self.add_item(LogFileSelect(log_dir, options))
 
-# 로그 파일 선택 셀렉트
 class LogFileSelect(Select):
     def __init__(self, log_dir, options):
         super().__init__(placeholder="Choose a log file...", options=options)
@@ -233,7 +236,6 @@ class LogFileSelect(Select):
         content = log_content if len(log_content) < 2000 else log_content[-2000:]  # Discord 메시지 길이 제한 대응
         await interaction.response.send_message(f"**{self.values[0]}**\n```{content}```", ephemeral=True)
 
-# 로그 검색을 위한 뷰
 class LogSearchView(View):
     def __init__(self, log_dirs):
         super().__init__()
@@ -241,7 +243,6 @@ class LogSearchView(View):
         options = [discord.SelectOption(label=key) for key in log_dirs.keys()]
         self.add_item(LogSearchCategorySelect(options))
 
-# 로그 검색 카테고리 셀렉트
 class LogSearchCategorySelect(Select):
     def __init__(self, options):
         super().__init__(placeholder="검색할 로그 카테고리를 선택하세요...", options=options)
@@ -251,14 +252,12 @@ class LogSearchCategorySelect(Select):
         self.selected_category = self.values[0]  # 선택된 카테고리 저장
         self.view.stop()  # 드롭다운 메뉴 비활성화 후 키워드 입력을 받기 위해 뷰 종료
 
-# 로그 다운로드를 위한 뷰
 class LogDownloadView(View):
     def __init__(self, log_dirs):
         super().__init__()
         options = [discord.SelectOption(label=key) for key in log_dirs.keys()]
         self.add_item(LogDownloadCategorySelect(options))
 
-# 로그 다운로드 카테고리 셀렉트
 class LogDownloadCategorySelect(Select):
     def __init__(self, options):
         super().__init__(placeholder="다운로드할 로그 카테고리를 선택하세요...", options=options)
@@ -272,33 +271,6 @@ class LogDownloadCategorySelect(Select):
         else:
             file_path = os.path.join(log_dir, files[0])
             await interaction.response.send_message(file=discord.File(file_path), ephemeral=True)
-
-class LogKeywordView(View):
-    def __init__(self, selected_category, log_dirs):
-        super().__init__()
-        self.selected_category = selected_category
-        self.log_dirs = log_dirs
-
-    async def interaction_check(self, interaction: discord.Interaction) -> bool:
-        self.keyword = interaction.message.content.strip()  # 키워드 저장
-        return True
-
-    async def on_submit(self, interaction: discord.Interaction):
-        log_dir = self.log_dirs[self.selected_category]
-        matched_lines = []
-
-        # 선택된 카테고리 로그 파일에서 키워드 검색
-        for log_file in os.listdir(log_dir):
-            file_path = os.path.join(log_dir, log_file)
-            with open(file_path, 'r') as f:
-                lines = f.readlines()
-                matched_lines.extend([line for line in lines if self.keyword in line])
-
-        if matched_lines:
-            content = "\n".join(matched_lines[-10:])  # 마지막 10개 결과만 표시
-            await interaction.response.send_message(f"**키워드 '{self.keyword}' 검색 결과:**\n```{content}```", ephemeral=True)
-        else:
-            await interaction.response.send_message(f"키워드 '{self.keyword}'에 대한 검색 결과가 없습니다.", ephemeral=True)
 
 async def setup(bot):
     await bot.add_cog(Logging(bot))

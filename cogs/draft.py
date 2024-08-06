@@ -83,7 +83,7 @@ class Draft(commands.Cog):
         self.init_draft(ctx.channel.id, int(team_count), self.formations[ctx.channel.id])
         
         # 드래프트 메시지를 생성하고 이모지를 추가
-        draft_message = await ctx.send("드래프트가 시작되었습니다! 원하는 포지션의 이모지를 클릭하세요. 10초 안에 선택하세요.")
+        draft_message = await ctx.send("### 포메이션: 4-3-3\n **원하는 포지션의 이모지를 클릭하세요.**")
         self.draft_message_ids[ctx.channel.id] = draft_message.id
 
         emojis = self.get_emojis_for_formation(ctx.guild, self.formations[ctx.channel.id][0])
